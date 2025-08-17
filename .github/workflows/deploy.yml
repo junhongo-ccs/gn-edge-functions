@@ -1,0 +1,38 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin supabase
+
+      - name: Login
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: Link project
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Set Secrets (optional)
+        env:
+          GN_HOST_PIN: ${{ secrets.GN_HOST_PIN }}
+        run: |
+          if [ -n "$GN_HOST_PIN" ]; then
+            supabase secrets set GN_HOST_PIN="$GN_HOST_PIN"
+          fi
+
+      - name: Deploy sessions-advance
+        run: supabase functions deploy sessions-advance
